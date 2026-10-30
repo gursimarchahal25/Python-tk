@@ -35,6 +35,27 @@ def get_uptime():
     minutes = int((seconds % 3600) // 60)
     return f"{days}d {hours}h {minutes}m"
 
+def check_battery():
+    battery = psutil.sensors_battery()
+
+    if battery is None:
+        return None 
+    
+    percent = round (battery.percent, 1)
+    plugged = battery.power_plugged
+
+    if plugged:
+        status = "Charging"
+    elif percent <= 10:
+        status = "CRITICAL"
+    elif percent <= 20:
+        status = "WARNING"
+    else:
+        status = "OK"
+
+    state = "Plugged in" if plugged else "On battery"
+    return {"percent": percent, "status": status, "state": state}
+
     
 def main():
     try:
@@ -43,12 +64,14 @@ def main():
         print(f"Could not complete the health check: {error}")
         return
 
-
     print("=== System Health Report ===")
     for r in results:
         print(f"{r['name']:<15} {r['value']:>5}%   {r['status']}")
     print(f"{'Uptime':<15} {get_uptime()}")
     
+    battery = check_battery()
+    if battery:
+        print(f"{'Battery':<15} {battery['percent']:>5}%   {battery['status']} ({battery['state']})")
 
 if __name__ == "__main__":
     main()
